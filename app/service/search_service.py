@@ -3,7 +3,6 @@ from elasticsearch import Elasticsearch
 from app.db.models import SearchParams
 
 def build_elasticsearch_query(params: SearchParams) -> Dict[str, Any]:
-    """יצירת שאילתא לאלסטיק"""
     query = {
         "bool": {
             "should": [
@@ -32,7 +31,6 @@ def build_elasticsearch_query(params: SearchParams) -> Dict[str, Any]:
 
 
 def get_indices_for_search(source: Optional[str]) -> List[str]:
-    """קבלת האינדקסים לחיפוש לפי המקור"""
     if not source:
         return ["news_events", "terror_data"]
     elif source == "news":
@@ -43,19 +41,17 @@ def get_indices_for_search(source: Optional[str]) -> List[str]:
 def execute_search(
     elastic_client: Elasticsearch,
     params: SearchParams
-) -> List[Dict[str, Any]]:
-    """ביצוע החיפוש באלסטיק"""
+    ) -> List[Dict[str, Any]]:
+
     query = build_elasticsearch_query(params)
     indices = get_indices_for_search(params.source)
 
-    print(f"Searching with query: {query}")  # debug log
-    print(f"In indices: {indices}")  # debug log
-
+    print(f"Searching with query: {query}")
+    print(f"In indices: {indices}")
     results = elastic_client.search(
         index=indices,
         body=query
     )
-
     hits = results['hits']['hits']
     print(f"Found {len(hits)} results")  # debug log
     return [hit["_source"] for hit in hits]

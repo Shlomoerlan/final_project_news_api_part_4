@@ -5,7 +5,6 @@ from app.db.models import SearchParams
 from app.service.search_service import execute_search
 from app.service.map_service import create_map_from_results
 
-
 search_routes = Blueprint('search', __name__, url_prefix='/search')
 
 

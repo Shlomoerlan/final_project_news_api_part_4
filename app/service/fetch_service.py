@@ -1,25 +1,14 @@
+import time
+
 from geopy.geocoders import Nominatim
 import groq
 import json
 from app.db.elastic_setting.config import Config
-from app.db.elastic_setting.elastic_connect import elastic_client
 from typing import List, Dict, Any, Optional
 import requests
 from functools import lru_cache
 from app.db.models.elastic_models import Coordinates, NewsClassification, NewsCategory
-
-def compose_news_request() -> Dict[str, Any]:
-    return {
-        "action": "getArticles",
-        "keyword": "terror attack",
-        "articlesPage": 1,
-        "articlesCount": 5,
-        "articlesSortBy": "socialScore",
-        "articlesSortByAsc": False,
-        "dataType": ["news"],
-        "apiKey": Config.NEWS_API_KEY
-    }
-
+from app.service.elastic_service import save_to_elasticsearch_for_news
 
 groq_client = groq.Client(api_key=Config.GROQ_API_KEY)
 geolocator = Nominatim(user_agent="terror_analysis")
@@ -118,36 +107,8 @@ def classify_news(title: str, content: str) -> Optional[NewsClassification]:
         return None
 
 
-def save_to_elasticsearch(article: Dict[str, Any], classification: NewsClassification):
-    print("Saving article:", article)
-    print("Classification:", classification)
-
-    doc = {
-        "title": article.get("title"),
-        "content": article.get("body"),  # השינוי מ-content ל-body
-        "publication_date": article.get("dateTime"),
-        "category": classification.category.value,
-        "location": classification.location,
-        "confidence": classification.confidence,
-        "source_url": article.get("url"),
-    }
-
-    if classification.coordinates:
-        doc["coordinates"] = {
-            "lat": classification.coordinates.latitude,
-            "lon": classification.coordinates.longitude
-        }
-
-    try:
-        elastic_client.index(index=Config.ES_INDEX_FOR_NEWS, document=doc)
-        print(f"Successfully saved article: {article.get('title')[:50]}...")
-    except Exception as e:
-        print(f"Error in save_to_elasticsearch: {str(e)}")
-        print(f"Document attempted to save: {doc}")
-
 def process_news():
     articles = fetch_news()
-
     for article in articles:
         try:
             if not article.get("title") or not article.get("body"):
@@ -160,7 +121,7 @@ def process_news():
 
             if classification:
                 try:
-                    save_to_elasticsearch(article, classification)
+                    save_to_elasticsearch_for_news(article, classification)
                     print(f"Saved article: {article.get('title')[:50]}...")
                 except Exception as e:
                     print(f"Error saving to elasticsearch: {e}")
@@ -168,3 +129,9 @@ def process_news():
         except Exception as e:
             print(f"Error processing article: {e}")
             continue
+
+
+def process_news_every_2_min():
+    while True:
+        process_news()
+        time.sleep(120)
