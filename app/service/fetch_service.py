@@ -1,5 +1,4 @@
 import time
-
 from geopy.geocoders import Nominatim
 import groq
 import json

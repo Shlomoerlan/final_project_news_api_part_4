@@ -10,12 +10,12 @@ app.register_blueprint(search_routes)
 
 
 if __name__ == '__main__':
-    Thread(target=process_news_every_2_min, daemon=True).start()
     create_index()
-    app.run(debug=True)
+    Thread(target=process_news_every_2_min, daemon=True).start()
+    app.run(port=5002, debug=True)
 
-    # import_historic_data(
-    #     main_csv_path='./data/globalterrorismdb_1000.csv',
-    #     secondary_csv_path='./data/RAND_Database_5000.csv'
-    # )
+    import_historic_data(
+        main_csv_path='./data/globalterrorismdb_1000.csv',
+        secondary_csv_path='./data/RAND_Database_5000.csv'
+    )
 
